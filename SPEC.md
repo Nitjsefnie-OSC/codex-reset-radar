@@ -46,6 +46,9 @@ countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 - Last reset (relative) and average interval.
 - Last checked time, error if the last poll failed.
 - Launch at login toggle, "Data from codex-resets.com" link, Quit.
+- The toggle reads the login item status every time the panel opens. A failed change
+  leaves the toggle at the real status and shows the error under it. When the item needs
+  approval, the toggle stays on and a hint with a button opens System Settings → General → Login Items.
 
 ## Tech
 
