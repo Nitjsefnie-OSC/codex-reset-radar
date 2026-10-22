@@ -27,6 +27,7 @@ Requires macOS 13 or later.
 - When a reset with a date is announced, sends a notification (and another if the time changes).
 - Shows a countdown next to the menu bar icon (`9h`, `1h 59m`, `45m`, `due`) until it lands.
 - Lets you turn announced, reminder and landed notifications on or off separately, from the panel.
+- Speaks your macOS language (English or Italian so far); announcement posts stay in their original wording.
 
 ## Troubleshooting
 

@@ -12,7 +12,8 @@ public struct Reset: Decodable, Sendable {
     public let resetType: String
     public let announcedAt: Date
 
-    public var typeLabel: String { resetType == "banked" ? "Banked reset" : "Reset" }
+    public var typeLabel: String { ResetType.label(resetType) }
+    public var typeNoun: String { ResetType.noun(resetType) }
 }
 
 public struct ScheduledReset: Decodable, Sendable {
@@ -23,7 +24,20 @@ public struct ScheduledReset: Decodable, Sendable {
     public let text: String
     public let source: Source
 
-    public var typeLabel: String { resetType == "banked" ? "Banked reset" : "Reset" }
+    public var typeLabel: String { ResetType.label(resetType) }
+    public var typeNoun: String { ResetType.noun(resetType) }
+}
+
+private enum ResetType {
+    /// How the type reads on its own, as a heading: "Banked reset".
+    static func label(_ type: String) -> String {
+        type == "banked" ? String(localized: "Banked reset") : String(localized: "Reset")
+    }
+
+    /// How it reads mid-sentence: "banked reset". A separate key, because not every language lowercases nouns.
+    static func noun(_ type: String) -> String {
+        type == "banked" ? String(localized: "banked reset") : String(localized: "reset")
+    }
 }
 
 public struct Source: Decodable, Sendable {
@@ -44,7 +58,7 @@ public enum StatusError: LocalizedError, Equatable, Sendable {
 
     public var errorDescription: String? {
         switch self {
-        case .http(let code, _): return "codex-resets.com returned HTTP \(code)"
+        case .http(let code, _): return String(localized: "codex-resets.com returned HTTP \(code)")
         }
     }
 }
