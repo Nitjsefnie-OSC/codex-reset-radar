@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -18,3 +19,20 @@ jobs:
         run: swift format lint --strict --recursive Sources Tests
       - name: Test
         run: swift test
+      # Runtime isolation checks only trap in the running app, so launch the release build and make
+      # sure it is still up after a few seconds.
+      - name: Launch the built app
+        run: |
+          scripts/build-app.sh
+          "dist/Codex Reset Radar.app/Contents/MacOS/CodexResetRadar" &
+          pid=$!
+          sleep 15
+          if ! kill -0 "$pid" 2>/dev/null; then
+            wait "$pid" || echo "Exit status: $?"
+            echo "::error::The app exited within 15 seconds of launch"
+            ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i codex | while read -r report; do
+              head -c 4000 ~/Library/Logs/DiagnosticReports/"$report"
+            done
+            exit 1
+          fi
+          kill "$pid"
