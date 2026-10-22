@@ -54,6 +54,11 @@ countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 
 **Panel.**
 
+- Notifications off: when notification authorization is denied, or allowed with alerts disabled,
+  a warning "Notifications are off" with an "Open Notification Settings" button (the app's pane in
+  System Settings) sits above everything else. The settings are read on launch and each time the
+  panel opens, so the warning disappears once notifications are allowed again, without a restart.
+  Nothing is shown before the user has been asked.
 - Pending reset: type, local date and time, relative time, the announcement text,
   link to the post. With no date: "time not given yet". Past due: "waiting for it to land".
 - Otherwise: "No reset announced".
