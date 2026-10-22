@@ -39,17 +39,46 @@ future and either its `id` was never notified, or it was notified with a differe
 `scheduled_for` (title then says "rescheduled"). Notified `id → scheduled_for` pairs
 are kept in `UserDefaults`, capped at 50. Clicking the notification opens the source post.
 
+On first launch nothing has been notified yet, so if a dated reset is already pending the user
+gets its notification right away. This is intended: a colleague who installs the app
+mid-announcement should hear about it.
+
+A second notification, "Codex reset landed" (or "Codex banked reset landed"), is sent when
+`latest_reset.id` changes to a new id. That includes a surprise reset that was never announced.
+The last seen `latest_reset.id` is kept in `UserDefaults`, so it is sent once per id and survives
+relaunches. The first id ever seen is recorded without notifying: it is history, not news. A
+`scheduled_reset` that clears with no new `latest_reset` was called off and is dropped silently.
+Clicking the notification opens codex-resets.com, since `latest_reset` has no post URL.
+
+A reminder, "Codex reset in 15 minutes", is sent 15 minutes before the `scheduled_for` of a
+pending reset. The lead time is fixed. It is scheduled with the system (a calendar-triggered
+notification request) so it fires even if no poll happens near the time. A reschedule replaces it,
+so it fires once per `id` and `scheduled_for`. It is removed when the reset lands or is called off.
+It is skipped when the reset is announced less than 15 minutes ahead: the announcement covers it.
+Clicking the reminder opens the source post.
+
 **Menu bar.** Radar icon. When a dated reset is pending, the icon is followed by a
 countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 
 **Panel.**
 
+- Notifications off: when notification authorization is denied, or allowed with alerts disabled,
+  a warning "Notifications are off" with an "Open Notification Settings" button (the app's pane in
+  System Settings) sits above everything else. The settings are read on launch and each time the
+  panel opens, so the warning disappears once notifications are allowed again, without a restart.
+  Nothing is shown before the user has been asked.
 - Pending reset: type, local date and time, relative time, the announcement text,
   link to the post. With no date: "time not given yet". Past due: "waiting for it to land".
 - Otherwise: "No reset announced".
 - Last reset (relative) and average interval.
 - Last checked time, error if the last poll failed.
 - Launch at login toggle, "Data from codex-resets.com" link, Quit.
+- The toggle reads the login item status every time the panel opens. A failed change
+  leaves the toggle at the real status and shows the error under it. When the item needs
+  approval, the toggle stays on and a hint with a button opens System Settings → General → Login Items.
+- When macOS has translocated the app (it runs from an `AppTranslocation` path, as when
+  launched straight from Downloads), a warning says to quit, move the app to Applications and
+  open it from there, and the toggle is disabled. The app only detects this; it doesn't move itself.
 
 ## Tech
 
