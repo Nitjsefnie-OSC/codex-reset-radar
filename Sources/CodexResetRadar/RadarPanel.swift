@@ -5,6 +5,8 @@ import SwiftUI
 struct RadarPanel: View {
     @EnvironmentObject private var model: RadarModel
 
+    private let isTranslocated = Translocation.isTranslocated(bundleURL: Bundle.main.bundleURL)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
@@ -92,7 +94,11 @@ struct RadarPanel: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if isTranslocated {
+                TranslocationWarning()
+            }
             LaunchAtLoginToggle()
+                .disabled(isTranslocated)
             HStack {
                 Link("Data from codex-resets.com", destination: URL(string: "https://codex-resets.com")!)
                     .font(.caption)
@@ -107,6 +113,23 @@ struct RadarPanel: View {
 extension Color {
     /// Brand accent, #267CFF.
     fileprivate static let signalBlue = Color(red: 0x26 / 255, green: 0x7C / 255, blue: 0xFF / 255)
+}
+
+private struct TranslocationWarning: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("Running from a temporary location", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+            Text(
+                "Quit, move Codex Reset Radar to Applications and open it from there. "
+                    + "Launch at login is disabled until then, because it would point at a path that disappears."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 }
 
 private struct LaunchAtLoginToggle: View {

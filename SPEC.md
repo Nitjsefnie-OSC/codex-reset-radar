@@ -49,6 +49,9 @@ countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 - The toggle reads the login item status every time the panel opens. A failed change
   leaves the toggle at the real status and shows the error under it. When the item needs
   approval, the toggle stays on and a hint with a button opens System Settings → General → Login Items.
+- When macOS has translocated the app (it runs from an `AppTranslocation` path, as when
+  launched straight from Downloads), a warning says to quit, move the app to Applications and
+  open it from there, and the toggle is disabled. The app only detects this; it doesn't move itself.
 
 ## Tech
 
