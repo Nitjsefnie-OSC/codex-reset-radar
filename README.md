@@ -33,6 +33,23 @@ scripts/build-app.sh
 Produces `dist/Codex Reset Radar.app` and `dist/CodexResetRadar-<version>.zip`.
 Needs Xcode (for the universal arm64 + x86_64 build). See [SPEC.md](SPEC.md) for behaviour.
 
+### Releasing
+
+Releases are built by GitHub Actions from a tag; don't bump the version in `Resources/Info.plist`.
+
+1. In `CHANGELOG.md`, move the `[Unreleased]` entries under a new `## [X.Y.Z] - YYYY-MM-DD`
+   heading and update the link references at the bottom. Commit and push to `main`.
+2. Tag that commit and push the tag:
+
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+The workflow sets the version from the tag, builds and signs the app, and publishes a GitHub
+Release with `CodexResetRadar-X.Y.Z.zip` attached. The release notes are the matching
+`CHANGELOG.md` section, or auto-generated when there isn't one.
+
 ## License
 
 The code is released under the [MIT License](LICENSE).
