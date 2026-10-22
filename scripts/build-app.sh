@@ -16,6 +16,8 @@ rm -rf dist
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$EXECUTABLE" "$APP/Contents/MacOS/$EXECUTABLE"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp Resources/AppIcon.icns Resources/RadarMenuBarTemplate.png Resources/RadarMenuBarTemplate@2x.png \
+    "$APP/Contents/Resources/"
 
 codesign --force --sign - --timestamp=none "$APP"
 ditto -c -k --keepParent "$APP" "dist/$EXECUTABLE-$VERSION.zip"

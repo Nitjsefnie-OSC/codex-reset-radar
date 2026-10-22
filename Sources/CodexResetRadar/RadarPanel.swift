@@ -16,6 +16,7 @@ struct RadarPanel: View {
         }
         .padding(14)
         .frame(width: 320)
+        .tint(.signalBlue)
     }
 
     private var header: some View {
@@ -98,6 +99,11 @@ struct RadarPanel: View {
             }
         }
     }
+}
+
+private extension Color {
+    /// Brand accent, #267CFF.
+    static let signalBlue = Color(red: 0x26 / 255, green: 0x7C / 255, blue: 0xFF / 255)
 }
 
 private struct LaunchAtLoginToggle: View {

@@ -1,3 +1,5 @@
+<img src="docs/assets/icon.png" alt="" width="128" height="128">
+
 # Codex Reset Radar
 
 A tiny macOS menu bar app that pings you when a Codex usage reset is announced,

@@ -8,6 +8,8 @@
 	<string>Codex Reset Radar</string>
 	<key>CFBundleExecutable</key>
 	<string>CodexResetRadar</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>dev.mpellicc.CodexResetRadar</string>
 	<key>CFBundleInfoDictionaryVersion</key>
