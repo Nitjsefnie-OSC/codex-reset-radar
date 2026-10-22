@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reset data or the codex-resets.com site
+    url: https://codex-resets.com
+    about: The reset announcements come from codex-resets.com. Problems with its data are not caused by this app.

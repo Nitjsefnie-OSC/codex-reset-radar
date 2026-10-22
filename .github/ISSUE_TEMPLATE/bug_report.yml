@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Codex Reset Radar doesn't work as expected
+labels: ["needs-triage"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      description: "Apple menu → About This Mac."
+      placeholder: "macOS 14.5"
+    validations:
+      required: true
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Chip
+      options:
+        - Apple Silicon (M1 or later)
+        - Intel
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: "The number in the zip name you downloaded (CodexResetRadar-<version>.zip)."
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: |
+        Run this in Terminal and paste the output:
+
+        `log show --last 1d --predicate 'subsystem == "dev.mpellicc.CodexResetRadar"' --info`
+
+        Check it for anything you don't want to share first.
+      render: text
+    validations:
+      required: false
