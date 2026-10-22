@@ -23,7 +23,8 @@ final class NotificationAccessMonitor: ObservableObject {
     }
 
     func check() {
-        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+        // Called back on a background queue, so the closure must not be main-actor isolated.
+        UNUserNotificationCenter.current().getNotificationSettings { @Sendable [weak self] settings in
             let access = NotificationAccess(settings)
             Task { @MainActor in self?.isOff = access.isOff }
         }

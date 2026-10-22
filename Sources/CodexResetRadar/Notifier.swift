@@ -44,7 +44,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     override init() {
         super.init()
         center.delegate = self
-        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        // The center calls back on a background queue; @Sendable keeps the closure off the main actor,
+        // or Swift 6 traps on the isolation check when it runs.
+        center.requestAuthorization(options: [.alert, .sound]) { @Sendable _, _ in }
     }
 
     func process(_ status: StatusData) {

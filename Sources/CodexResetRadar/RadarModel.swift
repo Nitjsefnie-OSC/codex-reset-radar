@@ -49,7 +49,8 @@ final class RadarModel: ObservableObject {
             Task { @MainActor in self?.refresh() }
         }
 
-        pathMonitor.pathUpdateHandler = { [weak self] path in
+        // Runs on the monitor's queue, so the closure must not be main-actor isolated.
+        pathMonitor.pathUpdateHandler = { @Sendable [weak self] path in
             let satisfied = path.status == .satisfied
             Task { @MainActor in self?.pathChanged(satisfied: satisfied) }
         }
