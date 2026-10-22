@@ -5,10 +5,13 @@ import SwiftUI
 struct RadarPanel: View {
     @EnvironmentObject private var model: RadarModel
 
+    private let isTranslocated = Translocation.isTranslocated(bundleURL: Bundle.main.bundleURL)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             Divider()
+            NotificationsOffWarning(access: model.notificationAccess)
             announcement
             Divider()
             history
@@ -92,7 +95,11 @@ struct RadarPanel: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if isTranslocated {
+                TranslocationWarning()
+            }
             LaunchAtLoginToggle()
+                .disabled(isTranslocated)
             HStack {
                 Link("Data from codex-resets.com", destination: URL(string: "https://codex-resets.com")!)
                     .font(.caption)
@@ -109,21 +116,86 @@ extension Color {
     fileprivate static let signalBlue = Color(red: 0x26 / 255, green: 0x7C / 255, blue: 0xFF / 255)
 }
 
+private struct TranslocationWarning: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("Running from a temporary location", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+            Text(
+                "Quit, move Codex Reset Radar to Applications and open it from there. "
+                    + "Launch at login is disabled until then, because it would point at a path that disappears."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 private struct LaunchAtLoginToggle: View {
-    @State private var enabled = SMAppService.mainApp.status == .enabled
+    @State private var state = Self.currentState()
+    @State private var failure: String?
 
     var body: some View {
-        Toggle("Launch at login", isOn: $enabled)
-            .onChange(of: enabled) { wanted in
-                do {
-                    if wanted {
-                        try SMAppService.mainApp.register()
-                    } else {
-                        try SMAppService.mainApp.unregister()
-                    }
-                } catch {
-                    enabled = SMAppService.mainApp.status == .enabled
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            // The binding reads the service state, so a failed change has nothing to revert and
+            // no change handler can call register/unregister a second time.
+            Toggle("Launch at login", isOn: Binding(get: { state.isOn }, set: { setEnabled($0) }))
+            if let hint = state.approvalHint {
+                Text(hint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    .font(.caption)
             }
+            if let failure {
+                Text(failure)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onAppear(perform: refresh)
+        // The panel view can outlive the window, so onAppear alone may miss later openings.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            refresh()
+        }
+    }
+
+    private static func currentState() -> LoginItemToggleState {
+        LoginItemToggleState(status: LoginItemStatus(SMAppService.mainApp.status))
+    }
+
+    private func refresh() {
+        state = Self.currentState()
+        failure = nil
+    }
+
+    private func setEnabled(_ wanted: Bool) {
+        do {
+            if wanted {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            failure = nil
+        } catch {
+            failure = "Couldn't \(wanted ? "enable" : "disable") launch at login: \(error.localizedDescription)"
+        }
+        state = Self.currentState()
+    }
+}
+
+extension LoginItemStatus {
+    fileprivate init(_ status: SMAppService.Status) {
+        switch status {
+        case .enabled: self = .enabled
+        case .requiresApproval: self = .requiresApproval
+        case .notFound: self = .notFound
+        case .notRegistered: self = .notRegistered
+        @unknown default: self = .notRegistered
+        }
     }
 }

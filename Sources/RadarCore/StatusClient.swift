@@ -10,6 +10,8 @@ public struct Reset: Decodable, Sendable {
     public let id: String
     public let resetType: String
     public let announcedAt: Date
+
+    public var typeLabel: String { resetType == "banked" ? "Banked reset" : "Reset" }
 }
 
 public struct ScheduledReset: Decodable, Sendable {
