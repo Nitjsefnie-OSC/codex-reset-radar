@@ -44,10 +44,12 @@ struct RadarPanel: View {
                     .foregroundStyle(.tint)
                 if let when = reset.scheduledFor {
                     Text(Format.when(when)).font(.title3.weight(.semibold))
-                    Text(when > model.now
-                         ? Format.relative(when, to: model.now)
-                         : "Scheduled time passed, waiting for it to land")
-                        .foregroundStyle(.secondary)
+                    Text(
+                        when > model.now
+                            ? Format.relative(when, to: model.now)
+                            : "Scheduled time passed, waiting for it to land"
+                    )
+                    .foregroundStyle(.secondary)
                 } else {
                     Text("Time not given yet").foregroundStyle(.secondary)
                 }
@@ -102,9 +104,9 @@ struct RadarPanel: View {
     }
 }
 
-private extension Color {
+extension Color {
     /// Brand accent, #267CFF.
-    static let signalBlue = Color(red: 0x26 / 255, green: 0x7C / 255, blue: 0xFF / 255)
+    fileprivate static let signalBlue = Color(red: 0x26 / 255, green: 0x7C / 255, blue: 0xFF / 255)
 }
 
 private struct LaunchAtLoginToggle: View {

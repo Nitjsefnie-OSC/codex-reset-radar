@@ -10,7 +10,8 @@ final class StatusDecodingTests: XCTestCase {
 
     private func date(_ iso: String, fractional: Bool = true) throws -> Date {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = fractional ? [.withInternetDateTime, .withFractionalSeconds] : [.withInternetDateTime]
+        formatter.formatOptions =
+            fractional ? [.withInternetDateTime, .withFractionalSeconds] : [.withInternetDateTime]
         return try XCTUnwrap(formatter.date(from: iso))
     }
 

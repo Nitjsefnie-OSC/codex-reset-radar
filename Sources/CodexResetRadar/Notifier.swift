@@ -34,7 +34,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         let when = announcement.scheduledFor
 
         let content = UNMutableNotificationContent()
-        content.title = announcement.kind == .announced
+        content.title =
+            announcement.kind == .announced
             ? "Codex \(reset.typeLabel.lowercased()) announced"
             : "Codex \(reset.typeLabel.lowercased()) rescheduled"
         content.subtitle = "\(Format.when(when)) · \(Format.relative(when))"
@@ -64,7 +65,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         if let string = response.notification.request.content.userInfo["url"] as? String,
-           let url = URL(string: string) {
+            let url = URL(string: string)
+        {
             Task { @MainActor in NSWorkspace.shared.open(url) }
         }
         completionHandler()
