@@ -1,0 +1,9 @@
+{
+  "data": {
+    "latest_reset": null,
+    "scheduled_reset": null,
+    "active_watch": null,
+    "stats": { "total": 0, "avg_interval_days": 6.3 }
+  },
+  "meta": { "api_version": "v1", "generated_at": "2026-10-22T11:09:54.122Z" }
+}

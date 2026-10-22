@@ -1,12 +1,26 @@
 import AppKit
+import RadarCore
 import UserNotifications
 
+/// Keeps the notified pairs in `UserDefaults`.
+private struct UserDefaultsNotifiedStore: NotifiedStore {
+    private let defaults = UserDefaults.standard
+    private let key = "notifiedAnnouncements"
+
+    func load() -> [String: Double] {
+        defaults.dictionary(forKey: key) as? [String: Double] ?? [:]
+    }
+
+    func save(_ notified: [String: Double]) {
+        defaults.set(notified, forKey: key)
+    }
+}
+
 /// Sends one notification per announced reset time, and opens the source post on click.
+@MainActor
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     private let center = UNUserNotificationCenter.current()
-    private let defaults = UserDefaults.standard
-    private let notifiedKey = "notifiedAnnouncements"
-    private let maxRemembered = 50
+    private let tracker = AnnouncementTracker(store: UserDefaultsNotifiedStore())
 
     override init() {
         super.init()
@@ -15,23 +29,13 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func announceIfNew(_ reset: ScheduledReset?) {
-        guard let reset, let when = reset.scheduledFor, when > Date() else { return }
-
-        // id -> scheduled_for (epoch seconds) of what we already notified.
-        var notified = defaults.dictionary(forKey: notifiedKey) as? [String: Double] ?? [:]
-        let stamp = when.timeIntervalSince1970
-        let previous = notified[reset.id]
-        guard previous != stamp else { return }
-
-        notified[reset.id] = stamp
-        if notified.count > maxRemembered {
-            let oldest = notified.sorted { $0.value < $1.value }.prefix(notified.count - maxRemembered)
-            oldest.forEach { notified.removeValue(forKey: $0.key) }
-        }
-        defaults.set(notified, forKey: notifiedKey)
+        guard let announcement = tracker.announcementIfNew(reset) else { return }
+        let reset = announcement.reset
+        let when = announcement.scheduledFor
 
         let content = UNMutableNotificationContent()
-        content.title = previous == nil
+        content.title =
+            announcement.kind == .announced
             ? "Codex \(reset.typeLabel.lowercased()) announced"
             : "Codex \(reset.typeLabel.lowercased()) rescheduled"
         content.subtitle = "\(Format.when(when)) · \(Format.relative(when))"
@@ -40,11 +44,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         if let url = reset.source.url {
             content.userInfo = ["url": url.absoluteString]
         }
-        center.add(UNNotificationRequest(identifier: "reset-\(reset.id)-\(Int(stamp))", content: content, trigger: nil))
+        let stamp = Int(when.timeIntervalSince1970)
+        center.add(UNNotificationRequest(identifier: "reset-\(reset.id)-\(stamp)", content: content, trigger: nil))
     }
 
+    // The center calls its delegate on a background queue, so these hop to the main actor where needed.
+
     // Menu bar apps count as frontmost while the panel is open; show the banner anyway.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -52,14 +59,15 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound])
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         if let string = response.notification.request.content.userInfo["url"] as? String,
-           let url = URL(string: string) {
-            NSWorkspace.shared.open(url)
+            let url = URL(string: string)
+        {
+            Task { @MainActor in NSWorkspace.shared.open(url) }
         }
         completionHandler()
     }

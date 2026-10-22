@@ -1,0 +1,43 @@
+import XCTest
+
+@testable import RadarCore
+
+final class FormatTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func countdown(after seconds: TimeInterval) -> String {
+        Format.countdown(to: now.addingTimeInterval(seconds), from: now)
+    }
+
+    func testPastAndNowAreDue() {
+        XCTAssertEqual(countdown(after: -3600), "due")
+        XCTAssertEqual(countdown(after: -1), "due")
+        XCTAssertEqual(countdown(after: 0), "due")
+    }
+
+    func testUnderAMinuteRoundsUpToOneMinute() {
+        XCTAssertEqual(countdown(after: 1), "1m")
+        XCTAssertEqual(countdown(after: 59), "1m")
+        XCTAssertEqual(countdown(after: 60), "1m")
+        XCTAssertEqual(countdown(after: 119), "1m")
+        XCTAssertEqual(countdown(after: 120), "2m")
+    }
+
+    func testMinutesUpToTheHour() {
+        XCTAssertEqual(countdown(after: 45 * 60), "45m")
+        XCTAssertEqual(countdown(after: 59 * 60 + 59), "59m")
+        XCTAssertEqual(countdown(after: 60 * 60), "1h")
+    }
+
+    func testHoursUpToFortyEight() {
+        XCTAssertEqual(countdown(after: 9 * 3600 + 30 * 60), "9h")
+        XCTAssertEqual(countdown(after: 48 * 3600 - 1), "47h")
+        XCTAssertEqual(countdown(after: 48 * 3600), "2d")
+    }
+
+    func testDaysFromFortyEightHours() {
+        XCTAssertEqual(countdown(after: 72 * 3600 - 1), "2d")
+        XCTAssertEqual(countdown(after: 72 * 3600), "3d")
+        XCTAssertEqual(countdown(after: 10 * 24 * 3600), "10d")
+    }
+}

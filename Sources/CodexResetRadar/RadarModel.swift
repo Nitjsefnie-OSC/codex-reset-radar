@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import RadarCore
 
 @MainActor
 final class RadarModel: ObservableObject {
@@ -55,26 +56,5 @@ final class RadarModel: ObservableObject {
             lastChecked = Date()
             now = Date()
         }
-    }
-}
-
-enum Format {
-    static func when(_ date: Date) -> String {
-        date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute())
-    }
-
-    static func relative(_ date: Date, to now: Date = Date()) -> String {
-        RelativeDateTimeFormatter().localizedString(for: date, relativeTo: now)
-    }
-
-    /// Compact countdown for the menu bar: 45m, 9h, 3d, or "due".
-    static func countdown(to date: Date, from now: Date) -> String {
-        let seconds = date.timeIntervalSince(now)
-        guard seconds > 0 else { return "due" }
-        let minutes = Int(seconds / 60)
-        if minutes < 60 { return "\(max(minutes, 1))m" }
-        let hours = minutes / 60
-        if hours < 48 { return "\(hours)h" }
-        return "\(hours / 24)d"
     }
 }
