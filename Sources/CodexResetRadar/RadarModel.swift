@@ -18,6 +18,7 @@ final class RadarModel: ObservableObject {
 
     private let client = StatusClient()
     private let notifier = Notifier()
+    let notificationAccess = NotificationAccessMonitor()
     private var timers: [Timer] = []
     private var pollTimer: Timer?
     private var retryTimer: Timer?
@@ -70,7 +71,7 @@ final class RadarModel: ObservableObject {
                 retryNotBefore = nil
                 failures.recordSuccess()
                 isOffline = false
-                notifier.announceIfNew(status.scheduledReset)
+                notifier.process(status)
             } catch {
                 let failure = PollFailure(error, now: Date(), nextRegularPoll: nextRegularPoll)
                 lastError = failure.message
