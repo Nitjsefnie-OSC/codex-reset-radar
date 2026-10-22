@@ -17,6 +17,7 @@ private struct UserDefaultsNotifiedStore: NotifiedStore {
 }
 
 /// Sends one notification per announced reset time, and opens the source post on click.
+@MainActor
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     private let center = UNUserNotificationCenter.current()
     private let tracker = AnnouncementTracker(store: UserDefaultsNotifiedStore())
@@ -46,8 +47,10 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center.add(UNNotificationRequest(identifier: "reset-\(reset.id)-\(stamp)", content: content, trigger: nil))
     }
 
+    // The center calls its delegate on a background queue, so these hop to the main actor where needed.
+
     // Menu bar apps count as frontmost while the panel is open; show the banner anyway.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -55,14 +58,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound])
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         if let string = response.notification.request.content.userInfo["url"] as? String,
            let url = URL(string: string) {
-            NSWorkspace.shared.open(url)
+            Task { @MainActor in NSWorkspace.shared.open(url) }
         }
         completionHandler()
     }

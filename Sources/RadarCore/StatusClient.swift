@@ -1,18 +1,18 @@
 import Foundation
 
-public struct StatusData: Decodable {
+public struct StatusData: Decodable, Sendable {
     public let latestReset: Reset?
     public let scheduledReset: ScheduledReset?
     public let stats: Stats
 }
 
-public struct Reset: Decodable {
+public struct Reset: Decodable, Sendable {
     public let id: String
     public let resetType: String
     public let announcedAt: Date
 }
 
-public struct ScheduledReset: Decodable {
+public struct ScheduledReset: Decodable, Sendable {
     public let id: String
     public let resetType: String
     public let announcedAt: Date
@@ -23,11 +23,11 @@ public struct ScheduledReset: Decodable {
     public var typeLabel: String { resetType == "banked" ? "Banked reset" : "Reset" }
 }
 
-public struct Source: Decodable {
+public struct Source: Decodable, Sendable {
     public let url: URL?
 }
 
-public struct Stats: Decodable {
+public struct Stats: Decodable, Sendable {
     public let avgIntervalDays: Double?
 }
 
@@ -46,7 +46,7 @@ enum StatusError: LocalizedError {
 }
 
 /// Fetches /api/v1/status, reusing the last response when the server answers 304.
-public final class StatusClient {
+public actor StatusClient {
     private let url = URL(string: "https://codex-resets.com/api/v1/status")!
     private var etag: String?
     private var cached: StatusData?
@@ -75,12 +75,12 @@ public final class StatusClient {
     static func decode(_ data: Data) throws -> StatusData {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let plain = ISO8601DateFormatter()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
+            let withFraction = ISO8601DateFormatter()
+            withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let plain = ISO8601DateFormatter()
             if let date = withFraction.date(from: string) ?? plain.date(from: string) {
                 return date
             }
