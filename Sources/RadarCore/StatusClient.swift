@@ -91,7 +91,7 @@ public actor StatusClient {
 }
 
 extension Bundle {
-    var shortVersion: String {
+    public var shortVersion: String {
         infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 }

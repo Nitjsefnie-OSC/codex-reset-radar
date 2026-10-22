@@ -4,6 +4,7 @@ import SwiftUI
 
 struct RadarPanel: View {
     @EnvironmentObject private var model: RadarModel
+    @EnvironmentObject private var updates: UpdateChecker
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -12,6 +13,7 @@ struct RadarPanel: View {
             announcement
             Divider()
             history
+            UpdateAvailableRow(updates: updates)
             Divider()
             footer
         }
