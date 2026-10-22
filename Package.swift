@@ -5,6 +5,17 @@ let package = Package(
     name: "CodexResetRadar",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "CodexResetRadar", path: "Sources/CodexResetRadar"),
+        .target(name: "RadarCore", path: "Sources/RadarCore"),
+        .executableTarget(
+            name: "CodexResetRadar",
+            dependencies: ["RadarCore"],
+            path: "Sources/CodexResetRadar"
+        ),
+        .testTarget(
+            name: "RadarCoreTests",
+            dependencies: ["RadarCore"],
+            path: "Tests/RadarCoreTests",
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

@@ -1,3 +1,4 @@
+import RadarCore
 import SwiftUI
 
 @main

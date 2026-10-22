@@ -1,0 +1,20 @@
+{
+  "data": {
+    "latest_reset": {
+      "id": "1",
+      "reset_type": "regular",
+      "announced_at": "2026-10-20T06:33:48Z",
+      "text": "Reset.",
+      "source": { "url": "https://x.com/example/status/1" }
+    },
+    "scheduled_reset": {
+      "id": "2",
+      "reset_type": "regular",
+      "announced_at": "2026-10-22T06:55:54Z",
+      "scheduled_for": "2026-10-22T17:00:00Z",
+      "text": "Soon.",
+      "source": { "url": "https://x.com/example/status/2" }
+    },
+    "stats": { "avg_interval_days": 6.3 }
+  }
+}
