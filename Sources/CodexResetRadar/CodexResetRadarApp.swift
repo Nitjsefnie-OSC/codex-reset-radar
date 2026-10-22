@@ -24,11 +24,19 @@ private struct MenuBarLabel: View {
     var body: some View {
         // Text interpolation drops an NSImage-backed glyph in the menu bar, so the countdown sits beside it.
         HStack(spacing: 4) {
-            Self.radarImage
+            if model.isOffline {
+                Image(systemName: "antenna.radiowaves.left.and.right.slash")
+            } else {
+                Self.radarImage
+            }
             if let when = model.pending?.scheduledFor {
                 Text(Format.countdown(to: when, from: model.now))
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            VoiceOverLabel.menuBar(
+                loaded: model.status != nil, pending: model.pending, isOffline: model.isOffline, now: model.now))
     }
 
     // The template glyph only exists inside the built .app; `swift run` falls back to the SF Symbol.
