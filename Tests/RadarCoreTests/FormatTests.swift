@@ -26,10 +26,18 @@ final class FormatTests: XCTestCase {
     func testMinutesUpToTheHour() {
         XCTAssertEqual(countdown(after: 45 * 60), "45m")
         XCTAssertEqual(countdown(after: 59 * 60 + 59), "59m")
-        XCTAssertEqual(countdown(after: 60 * 60), "1h")
+    }
+
+    func testHoursAndMinutesUnderTwoHours() {
+        XCTAssertEqual(countdown(after: 60 * 60), "1h 0m")
+        XCTAssertEqual(countdown(after: 60 * 60 + 59), "1h 0m")
+        XCTAssertEqual(countdown(after: 61 * 60), "1h 1m")
+        XCTAssertEqual(countdown(after: 90 * 60), "1h 30m")
+        XCTAssertEqual(countdown(after: 2 * 3600 - 1), "1h 59m")
     }
 
     func testHoursUpToFortyEight() {
+        XCTAssertEqual(countdown(after: 2 * 3600), "2h")
         XCTAssertEqual(countdown(after: 9 * 3600 + 30 * 60), "9h")
         XCTAssertEqual(countdown(after: 48 * 3600 - 1), "47h")
         XCTAssertEqual(countdown(after: 48 * 3600), "2d")
