@@ -1,6 +1,7 @@
 import AppKit
 import RadarCore
 import UserNotifications
+import os
 
 /// Keeps the notified pairs in `UserDefaults`.
 private struct UserDefaultsNotifiedStore: NotifiedStore {
@@ -52,7 +53,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center.delegate = self
         // The center calls back on a background queue; @Sendable keeps the closure off the main actor,
         // or Swift 6 traps on the isolation check when it runs.
-        center.requestAuthorization(options: [.alert, .sound]) { @Sendable _, _ in }
+        center.requestAuthorization(options: [.alert, .sound]) { @Sendable granted, error in
+            Log.notify.notice(
+                "authorization request: granted \(granted, privacy: .public), error \(error?.localizedDescription ?? "none", privacy: .public)"
+            )
+        }
     }
 
     /// Applies new notification switches right away. The reminder is the only kind with something
@@ -71,7 +76,13 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func announceIfNew(_ reset: ScheduledReset?) {
-        guard let announcement = preferences.allowing(tracker.announcementIfNew(reset)) else { return }
+        guard let recorded = tracker.announcementIfNew(reset) else { return }
+        guard let announcement = preferences.allowing(recorded) else {
+            Log.notify.notice(
+                "announcement for reset \(recorded.reset.id, privacy: .public) not sent: announcements are switched off"
+            )
+            return
+        }
         let reset = announcement.reset
         let when = announcement.scheduledFor
 
@@ -88,10 +99,17 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         }
         let stamp = Int(when.timeIntervalSince1970)
         center.add(UNNotificationRequest(identifier: "reset-\(reset.id)-\(stamp)", content: content, trigger: nil))
+        Log.notify.notice("announcement sent for reset \(reset.id, privacy: .public)")
     }
 
     private func notifyIfLanded(_ latest: Reset?) {
-        guard let landed = preferences.allowing(landed: landings.landedIfNew(latest)) else { return }
+        guard let recorded = landings.landedIfNew(latest) else { return }
+        guard let landed = preferences.allowing(landed: recorded) else {
+            Log.notify.notice(
+                "landed notification for reset \(recorded.id, privacy: .public) not sent: landed notifications are switched off"
+            )
+            return
+        }
 
         let content = UNMutableNotificationContent()
         content.title = "Codex \(landed.typeLabel.lowercased()) landed"
@@ -99,6 +117,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         content.sound = .default
         content.userInfo = ["url": Self.homepage.absoluteString]
         center.add(UNNotificationRequest(identifier: "landed-\(landed.id)", content: content, trigger: nil))
+        Log.notify.notice("landed notification sent for reset \(landed.id, privacy: .public)")
     }
 
     /// Keeps a single scheduled request in step with the pending reset. It is replaced when the
@@ -106,6 +125,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     private func syncReminder(for reset: ScheduledReset?) {
         guard let reset, let reminder = preferences.plannedReminder(for: reset, now: Date()) else {
             center.removePendingNotificationRequests(withIdentifiers: [Self.reminderID])
+            if preferences.reminder {
+                Log.notify.notice("reminder removed (nothing to remind about)")
+            } else {
+                Log.notify.notice("reminder removed: reminders are switched off")
+            }
             return
         }
 
@@ -122,6 +146,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: Calendar.current.dateComponents(fields, from: reminder.fireDate), repeats: false)
         center.add(UNNotificationRequest(identifier: Self.reminderID, content: content, trigger: trigger))
+        Log.notify.notice(
+            "reminder scheduled for \(reminder.fireDate.ISO8601Format(), privacy: .public) (reset \(reset.id, privacy: .public)), replacing any pending one"
+        )
     }
 
     // The center calls its delegate on a background queue, so these hop to the main actor where needed.

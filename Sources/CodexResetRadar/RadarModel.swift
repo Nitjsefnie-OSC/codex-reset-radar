@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import Network
 import RadarCore
+import os
 
 @MainActor
 final class RadarModel: ObservableObject {
@@ -33,10 +34,10 @@ final class RadarModel: ObservableObject {
 
     init() {
         notificationPreferences = notifier.preferences
-        refresh()
+        refresh(.launch)
 
         let poll = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            Task { @MainActor in self?.refresh(.timer) }
         }
         poll.tolerance = 60
         let tick = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
@@ -49,7 +50,7 @@ final class RadarModel: ObservableObject {
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            Task { @MainActor in self?.refresh(.wake) }
         }
 
         // Runs on the monitor's queue, so the closure must not be main-actor isolated.
@@ -67,12 +68,22 @@ final class RadarModel: ObservableObject {
         notificationPreferences = preferences
     }
 
-    func refresh() {
-        guard !isRefreshing else { return }
-        if let retryNotBefore, Date() < retryNotBefore { return }
+    func refresh(_ trigger: RefreshTrigger) {
+        guard !isRefreshing else {
+            Log.poll.notice("refresh (\(trigger.rawValue, privacy: .public)) skipped: one is already running")
+            return
+        }
+        if let retryNotBefore, Date() < retryNotBefore {
+            Log.poll.notice(
+                "refresh (\(trigger.rawValue, privacy: .public)) skipped: paused until \(retryNotBefore.ISO8601Format(), privacy: .public)"
+            )
+            return
+        }
+        Log.poll.notice("refresh (\(trigger.rawValue, privacy: .public)) started")
         isRefreshing = true
         Task {
             defer { isRefreshing = false }
+            let wasOffline = isOffline
             do {
                 let status = try await client.fetch()
                 self.status = status
@@ -83,11 +94,21 @@ final class RadarModel: ObservableObject {
                 notifier.process(status)
             } catch {
                 let failure = PollFailure(error, now: Date(), nextRegularPoll: nextRegularPoll)
+                let nsError = error as NSError
+                Log.poll.error(
+                    "refresh (\(trigger.rawValue, privacy: .public)) failed: \(failure.message, privacy: .public) [\(nsError.domain, privacy: .public) \(nsError.code, privacy: .public)], \(self.failures.count + 1, privacy: .public) in a row"
+                )
                 lastError = failure.message
                 failures.recordFailure()
                 isOffline = failures.isOffline
                 retryNotBefore = failure.retryNotBefore
+                if let until = failure.retryNotBefore {
+                    Log.poll.notice("polling paused until \(until.ISO8601Format(), privacy: .public)")
+                }
                 scheduleRetry(at: failure.retryNotBefore)
+            }
+            if isOffline != wasOffline {
+                Log.poll.notice("offline state changed: \(self.isOffline ? "offline" : "online", privacy: .public)")
             }
             lastChecked = Date()
             now = Date()
@@ -99,8 +120,12 @@ final class RadarModel: ObservableObject {
     }
 
     private func pathChanged(satisfied: Bool) {
-        if reconnect.shouldRefresh(pathSatisfied: satisfied, now: Date()) {
-            refresh()
+        let shouldRefresh = reconnect.shouldRefresh(pathSatisfied: satisfied, now: Date())
+        Log.poll.notice(
+            "network \(satisfied ? "reachable" : "unreachable", privacy: .public), reconnect refresh \(shouldRefresh ? "due" : "not due", privacy: .public)"
+        )
+        if shouldRefresh {
+            refresh(.reconnect)
         }
     }
 
@@ -109,9 +134,10 @@ final class RadarModel: ObservableObject {
         retryTimer?.invalidate()
         retryTimer = nil
         guard let date, date < nextRegularPoll else { return }
+        Log.poll.notice("retry-after refresh scheduled for \(date.ISO8601Format(), privacy: .public)")
         retryTimer = Timer.scheduledTimer(withTimeInterval: max(date.timeIntervalSinceNow, 1), repeats: false) {
             [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            Task { @MainActor in self?.refresh(.retryAfter) }
         }
     }
 }
