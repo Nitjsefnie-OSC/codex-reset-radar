@@ -35,6 +35,13 @@ future and either its `id` was never notified, or it was notified with a differe
 `scheduled_for` (title then says "rescheduled"). Notified `id → scheduled_for` pairs
 are kept in `UserDefaults`, capped at 50. Clicking the notification opens the source post.
 
+A second notification, "Codex reset landed" (or "Codex banked reset landed"), is sent when
+`latest_reset.id` changes to a new id. That includes a surprise reset that was never announced.
+The last seen `latest_reset.id` is kept in `UserDefaults`, so it is sent once per id and survives
+relaunches. The first id ever seen is recorded without notifying: it is history, not news. A
+`scheduled_reset` that clears with no new `latest_reset` was called off and is dropped silently.
+Clicking the notification opens codex-resets.com, since `latest_reset` has no post URL.
+
 **Menu bar.** Radar icon. When a dated reset is pending, the icon is followed by a
 countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 

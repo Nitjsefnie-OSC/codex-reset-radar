@@ -49,7 +49,7 @@ final class RadarModel: ObservableObject {
                 let status = try await client.fetch()
                 self.status = status
                 lastError = nil
-                notifier.announceIfNew(status.scheduledReset)
+                notifier.process(status)
             } catch {
                 lastError = error.localizedDescription
             }
