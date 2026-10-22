@@ -1,0 +1,23 @@
+{
+  "data": {
+    "latest_reset": {
+      "id": "2112432076767289678",
+      "reset_type": "banked",
+      "announced_at": "2026-10-20T06:33:48.000Z",
+      "text": "Reset.",
+      "source": { "type": "x_post", "author": "thsottiaux", "url": "https://x.com/thsottiaux/status/2112432076767289678" }
+    },
+    "scheduled_reset": {
+      "id": "2113162413008884099",
+      "status": "scheduled",
+      "reset_type": "banked",
+      "announced_at": "2026-10-22T06:55:54.000Z",
+      "scheduled_for": null,
+      "text": "A reset is coming, no time yet.",
+      "source": { "type": "x_post", "author": "thsottiaux", "url": null }
+    },
+    "active_watch": null,
+    "stats": { "total": 64, "avg_interval_days": null }
+  },
+  "meta": { "api_version": "v1", "generated_at": "2026-10-22T11:09:54.122Z" }
+}
