@@ -1,45 +1,71 @@
 name: Release
 
+# On every push to main, Release Drafter updates the draft release from the merged pull requests'
+# labels. When the draft holds a user-facing change, this job builds the app with the resolved
+# version, attaches the zip and publishes the release, which creates the tag.
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - name: Update the draft release
+        id: draft
+        uses: release-drafter/release-drafter@v7
+        with:
+          commitish: ${{ github.sha }}
 
-      - name: Set version from tag
+      - name: Check for user-facing changes
+        id: decide
+        env:
+          LABELS: ${{ steps.draft.outputs.labels }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag '$GITHUB_REF_NAME' is not of the form vX.Y.Z" >&2
-            exit 1
+          if jq -e 'any(.[]; IN("breaking", "enhancement", "bug", "accessibility"))' <<<"$LABELS" >/dev/null; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only documentation or maintenance changes since the last release; keeping the draft." >&2
+            echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - uses: actions/checkout@v4
+        if: steps.decide.outputs.publish == 'true'
+
+      - name: Select Xcode 16.4
+        if: steps.decide.outputs.publish == 'true'
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
+
+      - name: Set the version
+        if: steps.decide.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.draft.outputs.resolved_version }}
+        run: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Build, sign and zip
+        if: steps.decide.outputs.publish == 'true'
         run: scripts/build-app.sh
 
-      - name: Extract release notes
-        run: scripts/changelog-section.sh "$VERSION" > release-notes.md
-
-      - name: Create GitHub Release
+      - name: Publish the release
+        if: steps.decide.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.draft.outputs.tag_name }}
+          VERSION: ${{ steps.draft.outputs.resolved_version }}
         run: |
-          if [ -s release-notes.md ]; then
-            NOTES=(--notes-file release-notes.md)
-          else
-            echo "No CHANGELOG.md section for $VERSION, generating notes" >&2
-            NOTES=(--generate-notes)
-          fi
-          gh release create "$GITHUB_REF_NAME" "dist/CodexResetRadar-$VERSION.zip" \
-            --title "$GITHUB_REF_NAME" --verify-tag "${NOTES[@]}"
+          # The unversioned copy keeps releases/latest/download/CodexResetRadar.zip pointing at the newest build.
+          cp "dist/CodexResetRadar-$VERSION.zip" dist/CodexResetRadar.zip
+          gh release upload "$TAG" "dist/CodexResetRadar-$VERSION.zip" dist/CodexResetRadar.zip --clobber
+          gh release edit "$TAG" --draft=false --latest

@@ -9,7 +9,7 @@ Data from [codex-resets.com](https://codex-resets.com).
 
 ## Install
 
-1. Download `CodexResetRadar-<version>.zip`, unzip it and drag **Codex Reset Radar.app** to Applications.
+1. Download the [latest build](https://github.com/mpellicc/codex-reset-radar/releases/latest/download/CodexResetRadar.zip), unzip it and drag **Codex Reset Radar.app** to Applications.
 2. Open it. macOS will refuse because the app isn't from an identified developer.
 3. Go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to
    "Codex Reset Radar", then confirm. You only do this once.
@@ -35,20 +35,22 @@ Needs Xcode (for the universal arm64 + x86_64 build). See [SPEC.md](SPEC.md) for
 
 ### Releasing
 
-Releases are built by GitHub Actions from a tag; don't bump the version in `Resources/Info.plist`.
+Releases are automatic; don't tag by hand or bump the version in `Resources/Info.plist`.
 
-1. In `CHANGELOG.md`, move the `[Unreleased]` entries under a new `## [X.Y.Z] - YYYY-MM-DD`
-   heading and update the link references at the bottom. Commit and push to `main`.
-2. Tag that commit and push the tag:
+Every pull request needs one of these labels (a check enforces it):
 
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
+| Label | Version bump | Releases on merge |
+|---|---|---|
+| `breaking` | major | yes |
+| `enhancement` | minor | yes |
+| `bug`, `accessibility` | patch | yes |
+| `documentation`, `maintenance` | patch | no, waits for the next release |
 
-The workflow sets the version from the tag, builds and signs the app, and publishes a GitHub
-Release with `CodexResetRadar-X.Y.Z.zip` attached. The release notes are the matching
-`CHANGELOG.md` section, or auto-generated when there isn't one.
+On every merge to `main`, [Release Drafter](https://github.com/release-drafter/release-drafter)
+updates a draft release with the notes and the next version. If the draft contains a change that
+releases, the workflow builds and signs the app with that version, attaches
+`CodexResetRadar-X.Y.Z.zip` and publishes the release, which creates the `vX.Y.Z` tag. The release
+notes on GitHub are the changelog.
 
 ## License
 

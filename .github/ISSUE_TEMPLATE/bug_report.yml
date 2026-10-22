@@ -30,7 +30,7 @@ body:
     id: app-version
     attributes:
       label: App version
-      description: "The number in the zip name you downloaded (CodexResetRadar-<version>.zip)."
+      description: "In Finder, select Codex Reset Radar.app, choose File → Get Info and copy the Version."
       placeholder: "0.1.0"
     validations:
       required: true
