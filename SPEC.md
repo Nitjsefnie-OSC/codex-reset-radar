@@ -35,6 +35,10 @@ future and either its `id` was never notified, or it was notified with a differe
 `scheduled_for` (title then says "rescheduled"). Notified `id → scheduled_for` pairs
 are kept in `UserDefaults`, capped at 50. Clicking the notification opens the source post.
 
+On first launch nothing has been notified yet, so if a dated reset is already pending the user
+gets its notification right away. This is intended: a colleague who installs the app
+mid-announcement should hear about it.
+
 A second notification, "Codex reset landed" (or "Codex banked reset landed"), is sent when
 `latest_reset.id` changes to a new id. That includes a surprise reset that was never announced.
 The last seen `latest_reset.id` is kept in `UserDefaults`, so it is sent once per id and survives
