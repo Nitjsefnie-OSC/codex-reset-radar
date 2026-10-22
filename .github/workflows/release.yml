@@ -1,8 +1,9 @@
 name: Release
 
-# On every push to main, Release Drafter updates the draft release from the merged pull requests'
-# labels. When the draft holds a user-facing change, this job builds the app with the resolved
-# version, attaches the zip and publishes the release, which creates the tag.
+# On every push to main, Release Drafter updates the draft release (notes and next version) from
+# the merged pull requests' labels. Nothing is published until someone runs this workflow by hand
+# (Actions → Release → Run workflow): then it builds the app with the resolved version, attaches
+# the zip and publishes the draft, which creates the tag.
 on:
   push:
     branches: [main]
@@ -26,27 +27,15 @@ jobs:
         with:
           commitish: ${{ github.sha }}
 
-      - name: Check for user-facing changes
-        id: decide
-        env:
-          LABELS: ${{ steps.draft.outputs.labels }}
-        run: |
-          if jq -e 'any(.[]; IN("breaking", "enhancement", "bug", "accessibility"))' <<<"$LABELS" >/dev/null; then
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Only documentation or maintenance changes since the last release; keeping the draft." >&2
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.decide.outputs.publish == 'true'
+        if: github.event_name == 'workflow_dispatch'
 
       - name: Select Xcode 16.4
-        if: steps.decide.outputs.publish == 'true'
+        if: github.event_name == 'workflow_dispatch'
         run: sudo xcode-select -s /Applications/Xcode_16.4.app
 
       - name: Set the version
-        if: steps.decide.outputs.publish == 'true'
+        if: github.event_name == 'workflow_dispatch'
         env:
           VERSION: ${{ steps.draft.outputs.resolved_version }}
         run: |
@@ -54,18 +43,18 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
 
       - name: Build, sign and zip
-        if: steps.decide.outputs.publish == 'true'
+        if: github.event_name == 'workflow_dispatch'
         run: scripts/build-app.sh
 
       - name: Publish the release
-        if: steps.decide.outputs.publish == 'true'
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.draft.outputs.tag_name }}
           VERSION: ${{ steps.draft.outputs.resolved_version }}
         run: |
-          # The unversioned copy keeps releases/latest/download/CodexResetRadar.zip pointing at the newest build.
-          cp "dist/CodexResetRadar-$VERSION.zip" dist/CodexResetRadar.zip
-          gh release upload "$TAG" "dist/CodexResetRadar-$VERSION.zip" dist/CodexResetRadar.zip --clobber
+          # One unversioned zip per release keeps releases/latest/download/CodexResetRadar.zip stable.
+          mv "dist/CodexResetRadar-$VERSION.zip" dist/CodexResetRadar.zip
+          gh release upload "$TAG" dist/CodexResetRadar.zip --clobber
           gh release edit "$TAG" --draft=false --latest
