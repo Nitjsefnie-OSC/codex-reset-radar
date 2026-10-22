@@ -24,6 +24,13 @@ Fields used:
 
 Terms: the data must be credited with a link to codex-resets.com wherever it is shown.
 
+**Update check.** On launch and then once a day the app asks
+`GET https://api.github.com/repos/mpellicc/codex-reset-radar/releases/latest` for the newest
+release. Its `tag_name` (without the leading `v`) is compared with the app's
+`CFBundleShortVersionString` as `MAJOR.MINOR.PATCH`. Versions that don't have that shape, such as
+`dev` when run outside the `.app` or a prerelease suffix, never offer an update. A failed check
+is silent. It never notifies, downloads or installs anything.
+
 ## Behaviour
 
 **Polling.** On launch, every 15 minutes, after the Mac wakes, when the network comes back
@@ -75,6 +82,8 @@ poll; the countdown stays next to it. VoiceOver reads the item as a sentence, fo
 - Otherwise: "No reset announced".
 - Last reset (relative) and average interval.
 - Last checked time, error if the last poll failed.
+- When the update check found a newer release: "Version X available — Download", linking to
+  the release page.
 - Launch at login toggle, "Data from codex-resets.com" link, Quit.
 - The toggle reads the login item status every time the panel opens. A failed change
   leaves the toggle at the real status and shows the error under it. When the item needs
@@ -92,4 +101,5 @@ poll; the countdown stays next to it. VoiceOver reads the item as a sentence, fo
 
 ## Out of scope for v1
 
-Watch forecast, Slack, auto-update, app icon, settings beyond launch at login.
+Watch forecast, Slack, installing updates (the app only checks for them), settings beyond
+launch at login.

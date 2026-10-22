@@ -4,6 +4,7 @@ import SwiftUI
 
 struct RadarPanel: View {
     @EnvironmentObject private var model: RadarModel
+    @EnvironmentObject private var updates: UpdateChecker
 
     private let isTranslocated = Translocation.isTranslocated(bundleURL: Bundle.main.bundleURL)
 
@@ -15,6 +16,7 @@ struct RadarPanel: View {
             announcement
             Divider()
             history
+            UpdateAvailableRow(updates: updates)
             Divider()
             footer
         }
