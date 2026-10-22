@@ -42,6 +42,13 @@ relaunches. The first id ever seen is recorded without notifying: it is history,
 `scheduled_reset` that clears with no new `latest_reset` was called off and is dropped silently.
 Clicking the notification opens codex-resets.com, since `latest_reset` has no post URL.
 
+A reminder, "Codex reset in 15 minutes", is sent 15 minutes before the `scheduled_for` of a
+pending reset. The lead time is fixed. It is scheduled with the system (a calendar-triggered
+notification request) so it fires even if no poll happens near the time. A reschedule replaces it,
+so it fires once per `id` and `scheduled_for`. It is removed when the reset lands or is called off.
+It is skipped when the reset is announced less than 15 minutes ahead: the announcement covers it.
+Clicking the reminder opens the source post.
+
 **Menu bar.** Radar icon. When a dated reset is pending, the icon is followed by a
 countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
 
