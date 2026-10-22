@@ -117,7 +117,7 @@ private struct LaunchAtLoginToggle: View {
         VStack(alignment: .leading, spacing: 4) {
             // The binding reads the service state, so a failed change has nothing to revert and
             // no change handler can call register/unregister a second time.
-            Toggle("Launch at login", isOn: Binding(get: { state.isOn }, set: setEnabled))
+            Toggle("Launch at login", isOn: Binding(get: { state.isOn }, set: { setEnabled($0) }))
             if let hint = state.approvalHint {
                 Text(hint)
                     .font(.caption)
