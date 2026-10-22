@@ -15,6 +15,7 @@ final class RadarModel: ObservableObject {
 
     private let client = StatusClient()
     private let notifier = Notifier()
+    let notificationAccess = NotificationAccessMonitor()
     private var timers: [Timer] = []
     private var wakeObserver: NSObjectProtocol?
 

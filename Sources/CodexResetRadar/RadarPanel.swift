@@ -9,6 +9,7 @@ struct RadarPanel: View {
         VStack(alignment: .leading, spacing: 12) {
             header
             Divider()
+            NotificationsOffWarning(access: model.notificationAccess)
             announcement
             Divider()
             history
