@@ -43,6 +43,19 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(countdown(after: 48 * 3600), "2d")
     }
 
+    func testSpokenCountdown() {
+        func spoken(_ seconds: TimeInterval) -> String {
+            Format.spokenCountdown(to: now.addingTimeInterval(seconds), from: now)
+        }
+        XCTAssertEqual(spoken(0), "due")
+        XCTAssertEqual(spoken(45 * 60), "45 minutes")
+        XCTAssertEqual(spoken(60), "1 minute")
+        XCTAssertEqual(spoken(3600), "1 hour")
+        XCTAssertEqual(spoken(3600 + 59 * 60), "1 hour 59 minutes")
+        XCTAssertEqual(spoken(9 * 3600), "9 hours")
+        XCTAssertEqual(spoken(72 * 3600), "3 days")
+    }
+
     func testDaysFromFortyEightHours() {
         XCTAssertEqual(countdown(after: 72 * 3600 - 1), "2d")
         XCTAssertEqual(countdown(after: 72 * 3600), "3d")

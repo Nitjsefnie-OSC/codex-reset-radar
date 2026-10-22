@@ -60,7 +60,8 @@ Clicking the reminder opens the source post.
 **Menu bar.** Radar icon. When a dated reset is pending, the icon is followed by a
 countdown: `45m`, `1h 59m`, `9h`, `3d`, or `due` once the time has passed. After 2 consecutive failed
 polls (being offline counts) the icon becomes a slashed antenna, until the next successful
-poll; the countdown stays next to it.
+poll; the countdown stays next to it. VoiceOver reads the item as a sentence, for example
+"Codex Reset Radar, reset in 9 hours", "…, reset due", "…, no reset announced" or "…, offline".
 
 **Panel.**
 

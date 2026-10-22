@@ -14,15 +14,55 @@ public enum Format {
         RelativeDateTimeFormatter().localizedString(for: date, relativeTo: now)
     }
 
+    /// How long is left, split the way the countdown shows it.
+    private enum Remaining {
+        case due
+        case minutes(Int)
+        case hoursAndMinutes(Int, Int)
+        case hours(Int)
+        case days(Int)
+
+        init(to date: Date, from now: Date) {
+            let seconds = date.timeIntervalSince(now)
+            guard seconds > 0 else {
+                self = .due
+                return
+            }
+            let minutes = Int(seconds / 60)
+            let hours = minutes / 60
+            if minutes < 60 {
+                self = .minutes(max(minutes, 1))
+            } else if hours < 2 {
+                self = .hoursAndMinutes(hours, minutes % 60)
+            } else if hours < 48 {
+                self = .hours(hours)
+            } else {
+                self = .days(hours / 24)
+            }
+        }
+    }
+
     /// Compact countdown for the menu bar: 45m, 1h 59m, 9h, 3d, or "due".
     public static func countdown(to date: Date, from now: Date) -> String {
-        let seconds = date.timeIntervalSince(now)
-        guard seconds > 0 else { return "due" }
-        let minutes = Int(seconds / 60)
-        if minutes < 60 { return "\(max(minutes, 1))m" }
-        let hours = minutes / 60
-        if hours < 2 { return "\(hours)h \(minutes % 60)m" }
-        if hours < 48 { return "\(hours)h" }
-        return "\(hours / 24)d"
+        switch Remaining(to: date, from: now) {
+        case .due: return "due"
+        case .minutes(let m): return "\(m)m"
+        case .hoursAndMinutes(let h, let m): return "\(h)h \(m)m"
+        case .hours(let h): return "\(h)h"
+        case .days(let d): return "\(d)d"
+        }
+    }
+
+    /// The same countdown spelled out for VoiceOver: 45 minutes, 1 hour 59 minutes, 9 hours, 3 days, or "due".
+    public static func spokenCountdown(to date: Date, from now: Date) -> String {
+        func unit(_ count: Int, _ name: String) -> String { "\(count) \(name)\(count == 1 ? "" : "s")" }
+        switch Remaining(to: date, from: now) {
+        case .due: return "due"
+        case .minutes(let m): return unit(m, "minute")
+        case .hoursAndMinutes(let h, 0): return unit(h, "hour")
+        case .hoursAndMinutes(let h, let m): return "\(unit(h, "hour")) \(unit(m, "minute"))"
+        case .hours(let h): return unit(h, "hour")
+        case .days(let d): return unit(d, "day")
+        }
     }
 }
