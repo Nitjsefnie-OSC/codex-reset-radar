@@ -40,7 +40,9 @@ future and either its `id` was never notified, or it was notified with a differe
 are kept in `UserDefaults`, capped at 50. Clicking the notification opens the source post.
 
 **Menu bar.** Radar icon. When a dated reset is pending, the icon is followed by a
-countdown: `45m`, `9h`, `3d`, or `due` once the time has passed.
+countdown: `45m`, `9h`, `3d`, or `due` once the time has passed. After 2 consecutive failed
+polls (being offline counts) the icon becomes a slashed antenna, until the next successful
+poll; the countdown stays next to it.
 
 **Panel.**
 

@@ -9,6 +9,8 @@ final class RadarModel: ObservableObject {
     @Published private(set) var lastChecked: Date?
     @Published private(set) var lastError: String?
     @Published private(set) var isRefreshing = false
+    /// True after two polls in a row failed; the menu bar icon shows it.
+    @Published private(set) var isOffline = false
     /// Ticks every minute so countdowns stay current between polls.
     @Published private(set) var now = Date()
 
@@ -22,6 +24,7 @@ final class RadarModel: ObservableObject {
     private var wakeObserver: NSObjectProtocol?
     private let pathMonitor = NWPathMonitor()
     private var reconnect = ReconnectDebounce()
+    private var failures = FailureCounter()
     /// Set after a 429 (or 503 with `Retry-After`); polls before it are skipped.
     private var retryNotBefore: Date?
 
@@ -65,10 +68,14 @@ final class RadarModel: ObservableObject {
                 self.status = status
                 lastError = nil
                 retryNotBefore = nil
+                failures.recordSuccess()
+                isOffline = false
                 notifier.announceIfNew(status.scheduledReset)
             } catch {
                 let failure = PollFailure(error, now: Date(), nextRegularPoll: nextRegularPoll)
                 lastError = failure.message
+                failures.recordFailure()
+                isOffline = failures.isOffline
                 retryNotBefore = failure.retryNotBefore
                 scheduleRetry(at: failure.retryNotBefore)
             }
