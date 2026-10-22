@@ -40,7 +40,9 @@ public struct AnnouncementTracker {
         notified[reset.id] = stamp
         if notified.count > maxRemembered {
             let oldest = notified.sorted { $0.value < $1.value }.prefix(notified.count - maxRemembered)
-            oldest.forEach { notified.removeValue(forKey: $0.key) }
+            for entry in oldest {
+                notified.removeValue(forKey: entry.key)
+            }
         }
         store.save(notified)
 
