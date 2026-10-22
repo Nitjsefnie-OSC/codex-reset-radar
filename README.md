@@ -37,22 +37,23 @@ To format the code before committing, run `swift format --in-place --recursive S
 
 ### Releasing
 
-Releases are automatic; don't tag by hand or bump the version in `Resources/Info.plist`.
+Don't tag by hand or bump the version in `Resources/Info.plist`.
 
-Every pull request needs one of these labels (a check enforces it):
+Every pull request needs one of these labels (a check enforces it). The highest bump among the
+pull requests in a release decides its version:
 
-| Label | Version bump | Releases on merge |
-|---|---|---|
-| `breaking` | major | yes |
-| `enhancement` | minor | yes |
-| `bug`, `accessibility` | patch | yes |
-| `documentation`, `maintenance` | patch | no, waits for the next release |
+| Label | Version bump |
+|---|---|
+| `breaking` | major |
+| `enhancement` | minor |
+| `bug`, `accessibility`, `documentation`, `maintenance` | patch |
 
 On every merge to `main`, [Release Drafter](https://github.com/release-drafter/release-drafter)
-updates a draft release with the notes and the next version. If the draft contains a change that
-releases, the workflow builds and signs the app with that version, attaches
-`CodexResetRadar-X.Y.Z.zip` and publishes the release, which creates the `vX.Y.Z` tag. The release
-notes on GitHub are the changelog.
+adds the pull request to a draft release and updates its next version, so one release can group
+many changes. To publish it, run the Release workflow (Actions → Release → Run workflow, or
+`gh workflow run release.yml`). It builds and signs the app with the draft's version, attaches
+`CodexResetRadar.zip` and publishes the release, which creates the `vX.Y.Z` tag. The release notes
+on GitHub are the changelog.
 
 ## License
 
