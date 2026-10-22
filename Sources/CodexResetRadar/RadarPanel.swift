@@ -110,20 +110,68 @@ extension Color {
 }
 
 private struct LaunchAtLoginToggle: View {
-    @State private var enabled = SMAppService.mainApp.status == .enabled
+    @State private var state = Self.currentState()
+    @State private var failure: String?
 
     var body: some View {
-        Toggle("Launch at login", isOn: $enabled)
-            .onChange(of: enabled) { wanted in
-                do {
-                    if wanted {
-                        try SMAppService.mainApp.register()
-                    } else {
-                        try SMAppService.mainApp.unregister()
-                    }
-                } catch {
-                    enabled = SMAppService.mainApp.status == .enabled
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            // The binding reads the service state, so a failed change has nothing to revert and
+            // no change handler can call register/unregister a second time.
+            Toggle("Launch at login", isOn: Binding(get: { state.isOn }, set: setEnabled))
+            if let hint = state.approvalHint {
+                Text(hint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    .font(.caption)
             }
+            if let failure {
+                Text(failure)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onAppear(perform: refresh)
+        // The panel view can outlive the window, so onAppear alone may miss later openings.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            refresh()
+        }
+    }
+
+    private static func currentState() -> LoginItemToggleState {
+        LoginItemToggleState(status: LoginItemStatus(SMAppService.mainApp.status))
+    }
+
+    private func refresh() {
+        state = Self.currentState()
+        failure = nil
+    }
+
+    private func setEnabled(_ wanted: Bool) {
+        do {
+            if wanted {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            failure = nil
+        } catch {
+            failure = "Couldn't \(wanted ? "enable" : "disable") launch at login: \(error.localizedDescription)"
+        }
+        state = Self.currentState()
+    }
+}
+
+extension LoginItemStatus {
+    fileprivate init(_ status: SMAppService.Status) {
+        switch status {
+        case .enabled: self = .enabled
+        case .requiresApproval: self = .requiresApproval
+        case .notFound: self = .notFound
+        case .notRegistered: self = .notRegistered
+        @unknown default: self = .notRegistered
+        }
     }
 }
