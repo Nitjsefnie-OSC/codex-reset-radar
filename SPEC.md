@@ -26,9 +26,13 @@ Terms: the data must be credited with a link to codex-resets.com wherever it is 
 
 ## Behaviour
 
-**Polling.** On launch, every 15 minutes, after the Mac wakes, and on "Refresh".
-Sends `If-None-Match` with the last ETag. Errors are shown in the panel and retried
-on the next poll; they never notify.
+**Polling.** On launch, every 15 minutes, after the Mac wakes, when the network comes back
+(at most one such refresh per 30 seconds), and on "Refresh".
+Sends `If-None-Match` with the last ETag. On HTTP 429, or 503 with `Retry-After`, polls are
+skipped until the time the header gives (seconds or HTTP-date, at most 24 hours ahead), then
+retried; a 429 without the header waits for the next regular poll. Errors are shown in the
+panel as short messages (offline, timeout, server trouble, rate limited with the retry time,
+unexpected response) and retried on the next poll; they never notify.
 
 **Notification.** Sent when `scheduled_reset` has a non-null `scheduled_for` in the
 future and either its `id` was never notified, or it was notified with a different
