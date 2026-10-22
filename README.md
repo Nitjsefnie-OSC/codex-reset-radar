@@ -33,6 +33,8 @@ scripts/build-app.sh
 Produces `dist/Codex Reset Radar.app` and `dist/CodexResetRadar-<version>.zip`.
 Needs Xcode (for the universal arm64 + x86_64 build). See [SPEC.md](SPEC.md) for behaviour.
 
+To format the code before committing, run `swift format --in-place --recursive Sources Tests`.
+
 ## License
 
 The code is released under the [MIT License](LICENSE).
