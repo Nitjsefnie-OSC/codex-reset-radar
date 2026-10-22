@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Network
 import RadarCore
 
 @MainActor
@@ -16,7 +17,13 @@ final class RadarModel: ObservableObject {
     private let client = StatusClient()
     private let notifier = Notifier()
     private var timers: [Timer] = []
+    private var pollTimer: Timer?
+    private var retryTimer: Timer?
     private var wakeObserver: NSObjectProtocol?
+    private let pathMonitor = NWPathMonitor()
+    private var reconnect = ReconnectDebounce()
+    /// Set after a 429 (or 503 with `Retry-After`); polls before it are skipped.
+    private var retryNotBefore: Date?
 
     init() {
         refresh()
@@ -30,18 +37,26 @@ final class RadarModel: ObservableObject {
         }
         tick.tolerance = 5
         timers = [poll, tick]
+        pollTimer = poll
 
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
+
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let satisfied = path.status == .satisfied
+            Task { @MainActor in self?.pathChanged(satisfied: satisfied) }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "CodexResetRadar.pathMonitor"))
     }
 
     var pending: ScheduledReset? { status?.scheduledReset }
 
     func refresh() {
         guard !isRefreshing else { return }
+        if let retryNotBefore, Date() < retryNotBefore { return }
         isRefreshing = true
         Task {
             defer { isRefreshing = false }
@@ -49,12 +64,37 @@ final class RadarModel: ObservableObject {
                 let status = try await client.fetch()
                 self.status = status
                 lastError = nil
+                retryNotBefore = nil
                 notifier.announceIfNew(status.scheduledReset)
             } catch {
-                lastError = error.localizedDescription
+                let failure = PollFailure(error, now: Date(), nextRegularPoll: nextRegularPoll)
+                lastError = failure.message
+                retryNotBefore = failure.retryNotBefore
+                scheduleRetry(at: failure.retryNotBefore)
             }
             lastChecked = Date()
             now = Date()
+        }
+    }
+
+    private var nextRegularPoll: Date {
+        pollTimer?.fireDate ?? Date().addingTimeInterval(Self.pollInterval)
+    }
+
+    private func pathChanged(satisfied: Bool) {
+        if reconnect.shouldRefresh(pathSatisfied: satisfied, now: Date()) {
+            refresh()
+        }
+    }
+
+    /// Polls again right when a `Retry-After` runs out, unless the regular poll comes first anyway.
+    private func scheduleRetry(at date: Date?) {
+        retryTimer?.invalidate()
+        retryTimer = nil
+        guard let date, date < nextRegularPoll else { return }
+        retryTimer = Timer.scheduledTimer(withTimeInterval: max(date.timeIntervalSinceNow, 1), repeats: false) {
+            [weak self] _ in
+            Task { @MainActor in self?.refresh() }
         }
     }
 }

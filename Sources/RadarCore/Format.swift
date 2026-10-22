@@ -5,6 +5,11 @@ public enum Format {
         date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute())
     }
 
+    /// Time of day only, in the user's short style (15:05 or 3:05 PM).
+    public static func clock(_ date: Date, locale: Locale = .current, timeZone: TimeZone = .current) -> String {
+        date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: locale, timeZone: timeZone))
+    }
+
     public static func relative(_ date: Date, to now: Date = Date()) -> String {
         RelativeDateTimeFormatter().localizedString(for: date, relativeTo: now)
     }

@@ -35,12 +35,13 @@ private struct StatusResponse: Decodable {
     let data: StatusData
 }
 
-enum StatusError: LocalizedError {
-    case http(Int)
+public enum StatusError: LocalizedError, Equatable, Sendable {
+    /// A non-200 answer, with the moment the server asked us to wait until (`Retry-After`), if it did.
+    case http(Int, retryAfter: Date?)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
-        case .http(let code): return "codex-resets.com returned HTTP \(code)"
+        case .http(let code, _): return "codex-resets.com returned HTTP \(code)"
         }
     }
 }
@@ -64,7 +65,10 @@ public actor StatusClient {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         if http.statusCode == 304, let cached { return cached }
-        guard http.statusCode == 200 else { throw StatusError.http(http.statusCode) }
+        guard http.statusCode == 200 else {
+            let retryAfter = RetryAfter.date(from: http.value(forHTTPHeaderField: "Retry-After"), now: Date())
+            throw StatusError.http(http.statusCode, retryAfter: retryAfter)
+        }
 
         let status = try Self.decode(data)
         etag = http.value(forHTTPHeaderField: "ETag")
