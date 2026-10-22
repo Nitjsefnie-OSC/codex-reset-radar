@@ -31,6 +31,10 @@ private struct MenuBarLabel: View {
                 Text(Format.countdown(to: when, from: model.now))
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            VoiceOverLabel.menuBar(
+                loaded: model.status != nil, pending: model.pending, isOffline: model.isOffline, now: model.now))
     }
 
     // The template glyph only exists inside the built .app; `swift run` falls back to the SF Symbol.
