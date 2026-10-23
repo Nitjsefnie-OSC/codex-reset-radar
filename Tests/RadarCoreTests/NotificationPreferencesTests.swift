@@ -74,10 +74,24 @@ final class NotificationPreferencesTests: XCTestCase {
     }
 
     func testUnsupportedSavedLeadFallsBackToFifteenMinutes() throws {
-        defaults.set(20, forKey: "reminderLeadMinutes")
-        let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
-        let reminder = try XCTUnwrap(preferences.plannedReminder(for: pending(in: 3600), now: now))
-        XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(45 * 60))
+        for value in [-5, 0, 20, 90] {
+            defaults.set(value, forKey: "reminderLeadMinutes")
+            let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+            XCTAssertEqual(preferences.reminderLeadTime, .fifteenMinutes, "Stored lead: \(value)")
+            let reminder = try XCTUnwrap(preferences.plannedReminder(for: pending(in: 3600), now: now))
+            XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(45 * 60), "Stored lead: \(value)")
+        }
+    }
+
+    func testFractionalSavedLeadFallsBackToFifteenMinutes() throws {
+        let values: [Float] = [5.5, 30.5, 60.5]
+        for value in values {
+            defaults.set(value, forKey: "reminderLeadMinutes")
+            let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+            XCTAssertEqual(preferences.reminderLeadTime, .fifteenMinutes, "Stored lead: \(value)")
+            let reminder = try XCTUnwrap(preferences.plannedReminder(for: pending(in: 7200), now: now))
+            XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(105 * 60), "Stored lead: \(value)")
+        }
     }
 
     func testChangingLeadImmediatelyReplacesPendingReminder() throws {

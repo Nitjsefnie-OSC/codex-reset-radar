@@ -55,12 +55,15 @@ public struct UserDefaultsNotificationPreferencesStore: NotificationPreferencesS
     }
 
     public func load() -> NotificationPreferences {
-        NotificationPreferences(
+        let leadTime =
+            (defaults.object(forKey: "reminderLeadMinutes") as? NSNumber).flatMap { value in
+                ReminderLeadTime.allCases.first { value == NSNumber(value: $0.rawValue) }
+            } ?? .fifteenMinutes
+        return NotificationPreferences(
             announced: flag("notifyAnnounced"),
             reminder: flag("notifyReminder"),
             landed: flag("notifyLanded"),
-            reminderLeadTime: ReminderLeadTime(rawValue: defaults.integer(forKey: "reminderLeadMinutes"))
-                ?? .fifteenMinutes)
+            reminderLeadTime: leadTime)
     }
 
     public func save(_ preferences: NotificationPreferences) {

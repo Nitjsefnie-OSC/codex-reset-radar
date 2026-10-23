@@ -34,6 +34,12 @@ final class ReminderTests: XCTestCase {
         XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(30 * 60))
     }
 
+    func testSixtyMinuteLeadSchedulesSixtyMinutesBeforeReset() throws {
+        let preferences = NotificationPreferences(reminderLeadTime: .sixtyMinutes)
+        let reminder = try XCTUnwrap(preferences.plannedReminder(for: reset(in: 7200), now: now))
+        XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(60 * 60))
+    }
+
     func testSavedLeadSkipsAnnouncementsInsideOrAtItsWindow() throws {
         let suite = "ReminderTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
