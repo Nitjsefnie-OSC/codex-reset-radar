@@ -1,0 +1,6 @@
+/* Panel */
+"Reminder lead time" = "Reminder lead time";
+"%lld min" = "%lld min";
+
+/* Notifications */
+"Codex %@ in %lld minutes" = "Codex %@ in %lld minutes";

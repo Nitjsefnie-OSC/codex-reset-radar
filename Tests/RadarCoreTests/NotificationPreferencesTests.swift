@@ -58,6 +58,51 @@ final class NotificationPreferencesTests: XCTestCase {
         XCTAssertEqual(UserDefaultsNotificationPreferencesStore(defaults: defaults).load(), NotificationPreferences())
     }
 
+    func testMissingLeadPreferenceSchedulesFifteenMinutesBeforeReset() throws {
+        let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+        let reminder = try XCTUnwrap(preferences.plannedReminder(for: pending(in: 3600), now: now))
+        XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(45 * 60))
+    }
+
+    func testEveryLeadTimePersists() {
+        let store = UserDefaultsNotificationPreferencesStore(defaults: defaults)
+        for lead in ReminderLeadTime.allCases {
+            store.save(NotificationPreferences(reminderLeadTime: lead))
+            XCTAssertEqual(defaults.integer(forKey: "reminderLeadMinutes"), lead.rawValue)
+            XCTAssertEqual(store.load().reminderLeadTime, lead)
+        }
+    }
+
+    func testUnsupportedSavedLeadFallsBackToFifteenMinutes() throws {
+        defaults.set(20, forKey: "reminderLeadMinutes")
+        let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+        let reminder = try XCTUnwrap(preferences.plannedReminder(for: pending(in: 3600), now: now))
+        XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(45 * 60))
+    }
+
+    func testChangingLeadImmediatelyReplacesPendingReminder() throws {
+        var pendingRequest: Reminder?
+        let scheduler = ReminderScheduler { _, reminder in pendingRequest = reminder }
+        scheduler.process(pending(in: 7200), preferences: NotificationPreferences(), now: now)
+        XCTAssertEqual(try XCTUnwrap(pendingRequest).fireDate, now.addingTimeInterval(105 * 60))
+
+        scheduler.update(NotificationPreferences(reminderLeadTime: .thirtyMinutes), now: now)
+        XCTAssertEqual(try XCTUnwrap(pendingRequest).fireDate, now.addingTimeInterval(90 * 60))
+
+        scheduler.update(NotificationPreferences(reminderLeadTime: .fiveMinutes), now: now)
+        XCTAssertEqual(try XCTUnwrap(pendingRequest).fireDate, now.addingTimeInterval(115 * 60))
+    }
+
+    func testChangingLeadIntoWindowImmediatelyRemovesPendingReminder() {
+        var pendingRequest: Reminder?
+        let scheduler = ReminderScheduler { _, reminder in pendingRequest = reminder }
+        scheduler.process(pending(in: 20 * 60), preferences: NotificationPreferences(), now: now)
+        XCTAssertNotNil(pendingRequest)
+
+        scheduler.update(NotificationPreferences(reminderLeadTime: .thirtyMinutes), now: now)
+        XCTAssertNil(pendingRequest)
+    }
+
     func testPersistenceRoundTrip() {
         let store = UserDefaultsNotificationPreferencesStore(defaults: defaults)
         let chosen = NotificationPreferences(announced: true, reminder: false, landed: false)

@@ -7,15 +7,20 @@ import Foundation
 public struct NotificationPreferences: Equatable, Sendable {
     /// "Reset announced" and "rescheduled".
     public var announced: Bool
-    /// "Reset in 15 minutes".
+    /// "Reset in N minutes".
     public var reminder: Bool
     /// "Reset landed".
     public var landed: Bool
+    public var reminderLeadTime: ReminderLeadTime
 
-    public init(announced: Bool = true, reminder: Bool = true, landed: Bool = true) {
+    public init(
+        announced: Bool = true, reminder: Bool = true, landed: Bool = true,
+        reminderLeadTime: ReminderLeadTime = .fifteenMinutes
+    ) {
         self.announced = announced
         self.reminder = reminder
         self.landed = landed
+        self.reminderLeadTime = reminderLeadTime
     }
 
     /// The announcement to send, or nil when announcements are switched off.
@@ -31,7 +36,7 @@ public struct NotificationPreferences: Equatable, Sendable {
 
     /// The reminder to have armed for this pending reset, or nil when reminders are switched off.
     public func plannedReminder(for reset: ScheduledReset?, now: Date) -> Reminder? {
-        reminder ? Reminder.planned(for: reset, now: now) : nil
+        reminder ? Reminder.planned(for: reset, now: now, leadTime: reminderLeadTime) : nil
     }
 }
 
@@ -41,7 +46,7 @@ public protocol NotificationPreferencesStore {
     func save(_ preferences: NotificationPreferences)
 }
 
-/// Keeps one boolean per kind in `UserDefaults`. A key that was never written reads as on.
+/// Keeps the switches and reminder lead time in `UserDefaults`, with defaults for missing keys.
 public struct UserDefaultsNotificationPreferencesStore: NotificationPreferencesStore {
     private let defaults: UserDefaults
 
@@ -53,13 +58,16 @@ public struct UserDefaultsNotificationPreferencesStore: NotificationPreferencesS
         NotificationPreferences(
             announced: flag("notifyAnnounced"),
             reminder: flag("notifyReminder"),
-            landed: flag("notifyLanded"))
+            landed: flag("notifyLanded"),
+            reminderLeadTime: ReminderLeadTime(rawValue: defaults.integer(forKey: "reminderLeadMinutes"))
+                ?? .fifteenMinutes)
     }
 
     public func save(_ preferences: NotificationPreferences) {
         defaults.set(preferences.announced, forKey: "notifyAnnounced")
         defaults.set(preferences.reminder, forKey: "notifyReminder")
         defaults.set(preferences.landed, forKey: "notifyLanded")
+        defaults.set(preferences.reminderLeadTime.rawValue, forKey: "reminderLeadMinutes")
     }
 
     private func flag(_ key: String) -> Bool {

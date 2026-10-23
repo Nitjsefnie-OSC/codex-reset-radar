@@ -244,9 +244,34 @@ private struct NotificationSwitches: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SwitchRow("Announced", isOn: binding(\.announced))
-            SwitchRow("Reminder", isOn: binding(\.reminder))
+            HStack {
+                Text("Reminder")
+                Picker("Reminder lead time", selection: leadTime) {
+                    ForEach(ReminderLeadTime.allCases, id: \.self) { lead in
+                        Text("\(lead.rawValue) min").tag(lead)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+                Spacer()
+                Toggle("Reminder", isOn: binding(\.reminder))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+            }
             SwitchRow("Landed", isOn: binding(\.landed))
         }
+    }
+
+    private var leadTime: Binding<ReminderLeadTime> {
+        Binding(
+            get: { model.notificationPreferences.reminderLeadTime },
+            set: { wanted in
+                var preferences = model.notificationPreferences
+                preferences.reminderLeadTime = wanted
+                model.setNotificationPreferences(preferences)
+            })
     }
 
     private func binding(_ kind: WritableKeyPath<NotificationPreferences, Bool>) -> Binding<Bool> {

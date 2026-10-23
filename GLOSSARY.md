@@ -32,7 +32,7 @@ A pending reset that disappears without landing.
 _Avoid_: Cancelled
 
 **Reminder**:
-The notification sent a fixed lead time before a pending reset's scheduled time.
+The notification sent the chosen lead time before a pending reset's scheduled time.
 
 **Watch forecast**:
 The source's AI-generated guess that a reset may be coming, without an announcement.

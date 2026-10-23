@@ -43,7 +43,13 @@ can't do this, so update from those once by hand.
 - When a reset with a date is announced, sends a notification (and another if the time changes).
 - Shows a countdown next to the menu bar icon (`9h`, `1h 59m`, `45m`, `due`) until it lands.
 - Lets you turn announced, reminder and landed notifications on or off separately, from the panel.
+- Reminds you 5, 15, 30 or 60 minutes before a pending reset; choose the lead time next to Reminder
+  in the panel (15 minutes by default).
 - Speaks your macOS language (English or Italian so far); announcement posts stay in their original wording.
+
+Notification sound is controlled by macOS: in System Settings → Notifications → Codex Reset Radar,
+use **Play sound for notifications**. The panel's **Open Notification Settings** button opens that pane
+when notifications are off.
 
 ## Troubleshooting
 

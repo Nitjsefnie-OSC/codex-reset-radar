@@ -23,6 +23,29 @@ final class ReminderTests: XCTestCase {
         XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(45 * 60))
     }
 
+    func testSavedThirtyMinuteLeadSchedulesThirtyMinutesBeforeReset() throws {
+        let suite = "ReminderTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(30, forKey: "reminderLeadMinutes")
+        let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+
+        let reminder = try XCTUnwrap(preferences.plannedReminder(for: reset(in: 3600), now: now))
+        XCTAssertEqual(reminder.fireDate, now.addingTimeInterval(30 * 60))
+    }
+
+    func testSavedLeadSkipsAnnouncementsInsideOrAtItsWindow() throws {
+        let suite = "ReminderTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(30, forKey: "reminderLeadMinutes")
+        let preferences = UserDefaultsNotificationPreferencesStore(defaults: defaults).load()
+
+        XCTAssertNil(preferences.plannedReminder(for: reset(in: 20 * 60), now: now))
+        XCTAssertNil(preferences.plannedReminder(for: reset(in: 30 * 60), now: now))
+        XCTAssertNotNil(preferences.plannedReminder(for: reset(in: 30 * 60 + 1), now: now))
+    }
+
     func testPlanningTheSameResetAgainGivesTheSameReminder() {
         XCTAssertEqual(
             Reminder.planned(for: reset(in: 3600), now: now),

@@ -43,8 +43,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     private let landings = LandingTracker(store: UserDefaultsLandedStore())
     private let preferencesStore = UserDefaultsNotificationPreferencesStore()
     private(set) var preferences: NotificationPreferences
-    /// The pending reset of the last poll, so a switch can re-sync the reminder without waiting for the next one.
-    private var lastScheduledReset: ScheduledReset?
+    private lazy var reminders = ReminderScheduler { [weak self] reset, reminder in
+        self?.syncReminder(for: reset, reminder: reminder)
+    }
 
     override init() {
         preferences = preferencesStore.load()
@@ -60,19 +61,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    /// Applies new notification switches right away. The reminder is the only kind with something
+    /// Applies new notification preferences right away. The reminder is the only kind with something
     /// pending in the system, so it is re-synced here instead of at the next poll.
     func update(_ preferences: NotificationPreferences) {
         self.preferences = preferences
         preferencesStore.save(preferences)
-        syncReminder(for: lastScheduledReset)
+        reminders.update(preferences)
     }
 
     func process(_ status: StatusData) {
-        lastScheduledReset = status.scheduledReset
         announceIfNew(status.scheduledReset)
         notifyIfLanded(status.latestReset)
-        syncReminder(for: status.scheduledReset)
+        reminders.process(status.scheduledReset, preferences: preferences)
     }
 
     private func announceIfNew(_ reset: ScheduledReset?) {
@@ -122,8 +122,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     /// Keeps a single scheduled request in step with the pending reset. It is replaced when the
     /// time changes and removed once there is nothing to remind about (landed, called off, too close).
-    private func syncReminder(for reset: ScheduledReset?) {
-        guard let reset, let reminder = preferences.plannedReminder(for: reset, now: Date()) else {
+    private func syncReminder(for reset: ScheduledReset?, reminder: Reminder?) {
+        guard let reset, let reminder else {
             center.removePendingNotificationRequests(withIdentifiers: [Self.reminderID])
             if preferences.reminder {
                 Log.notify.notice("reminder removed (nothing to remind about)")
@@ -134,7 +134,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "Codex \(reset.typeNoun) in 15 minutes")
+        content.title = String(localized: "Codex \(reset.typeNoun) in \(reminder.leadTime.rawValue) minutes")
         content.subtitle = Format.when(reminder.scheduledFor)
         content.body = reset.text
         content.sound = .default
