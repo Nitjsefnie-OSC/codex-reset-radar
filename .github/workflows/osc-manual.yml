@@ -1,0 +1,64 @@
+# Manual CI wrapper for the Nitjsefnie-OSC fork of codex-reset-radar.
+#
+# Generic on purpose: it takes any ref in this repository via `target_ref` and
+# runs the repository's own PR-depth gate (build, strict format lint, tests and
+# the app-launch check), mirroring .github/workflows/ci.yml's ci job on the
+# same macOS image and Xcode. No per-branch logic belongs in this file.
+
+name: OSC Manual CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: "Branch, tag or SHA in this repository to test"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: macOS 26 (Xcode 26.6) — build, lint, test, launch
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - name: Checkout target_ref
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.target_ref }}
+          fetch-depth: 0
+
+      - name: Provenance
+        run: |
+          echo "Tested commit: $(git rev-parse HEAD) (resolved from target_ref '${{ inputs.target_ref }}')"
+          git log -1 --format='%H%n%an%n%s'
+
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Build
+        run: swift build
+
+      - name: Lint
+        run: swift format lint --strict --recursive Sources Tests
+
+      - name: Test
+        run: swift test
+
+      - name: Launch the built app
+        run: |
+          scripts/build-app.sh
+          "dist/Codex Reset Radar.app/Contents/MacOS/CodexResetRadar" &
+          pid=$!
+          sleep 15
+          if ! kill -0 "$pid" 2>/dev/null; then
+            wait "$pid" || echo "Exit status: $?"
+            echo "::error::The app exited within 15 seconds of launch"
+            ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i codex | while read -r report; do
+              head -c 4000 ~/Library/Logs/DiagnosticReports/"$report"
+            done
+            exit 1
+          fi
+          kill "$pid"
