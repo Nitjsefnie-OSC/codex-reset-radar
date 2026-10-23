@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Conventional Commits](https://www.conventionalcommits.org/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.8.1](https://github.com/Nitjsefnie-OSC/codex-reset-radar/compare/v0.8.0...v0.8.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* translate the panel's switch labels ([#77](https://github.com/Nitjsefnie-OSC/codex-reset-radar/issues/77)) ([4129a51](https://github.com/Nitjsefnie-OSC/codex-reset-radar/commit/4129a51bc049b02cde9fb6ff30ba4aa70a93d3e4)), closes [#66](https://github.com/Nitjsefnie-OSC/codex-reset-radar/issues/66)
+
+
+### Documentation
+
+* add a localization guide for agents ([364af7e](https://github.com/Nitjsefnie-OSC/codex-reset-radar/commit/364af7e576505116583f20d47fec1d284257cfc5))
+
 ## [0.8.0](https://github.com/mpellicc/codex-reset-radar/compare/v0.7.0...v0.8.0) (2026-10-22)
 
 
